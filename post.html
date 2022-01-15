@@ -6,40 +6,43 @@
         function sendPOST() {
             var request = new XMLHttpRequest();
             request.open("POST", document.getElementById("action").value, true);
-            request.setRequestHeader("Content-type", "application/json: charset=UTF-8")
+            request.setRequestHeader("Content-type", "application/JSON")
+
+            request.onreadystatechange = function () {
+                if (this.readyState == 4) {
+                    document.getElementById("response").value = request.responseText;
+                }
+            };
+
             request.send(document.getElementById("body").value)
 
             console.log(document.getElementById("body").value)
 
-            request.onreadystatechange = function () {
-                if (this.readyState == 4 && this.status == 200) {
-                    // Typical action to be performed when the document is ready:
-                    document.getElementById("response").value = request.responseText;
-                }
-            };
+            
         }
 
         function sendGET() {
             var request = new XMLHttpRequest();
             request.open("GET", document.getElementById("action").value, true);
-            request.setRequestHeader("Content-type", "application/json: charset=UTF-8")
+            request.setRequestHeader("Content-type", "application/JSON")
+
+            request.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("response").value = request.responseText;
+                }
+            };
+            
             request.send(document.getElementById("body").value)
 
             console.log(document.getElementById("body").value)
 
-            request.onreadystatechange = function () {
-                if (this.readyState == 4 && this.status == 200) {
-                    // Typical action to be performed when the document is ready:
-                    document.getElementById("response").value = request.responseText;
-                }
-            };
         }
     </script>
 </head>
 
 <body>
-    <input type="text" id="action">
-    <input type="text" id="body">
+    <input type="text" style="width: 500px;" id="action">
+    <input type="text" style="width: 500px;" id="body">
     <button onclick="sendPOST()">POST</button>
     <button onclick="sendGET()">GET</button>
     <br>

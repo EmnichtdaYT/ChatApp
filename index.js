@@ -75,7 +75,7 @@ app.get('/generalchat', (req, res, next) => {
 
 app.post('/test', (req, res, next) => {
     console.log("test")
-    res.json(req.body);
+    res.send(req.body)
 })
 
 app.post('/generalchat', (req, res, next) => {
@@ -87,10 +87,16 @@ app.post('/generalchat', (req, res, next) => {
 })
 
 app.post('/login', (req, res, next) => {
-    res.json({
-        user: req.body.user,
-        pass: req.body.pass
-    })
+
+    console.log(req.body)
+
+    var user = req.body.user;
+    var pass = req.body.pass;
+
+    res.json({ status: (user=="emnichtda"&&pass=="emnichtda") ? "Successfully logged in" : "Wrong credentials" })
+
+
+    res.json({ user: user, pass: pass });
 })
 
 app.get('/:token', (req, res, next) => {
