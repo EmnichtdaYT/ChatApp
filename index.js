@@ -94,9 +94,6 @@ app.post('/login', (req, res, next) => {
     var pass = req.body.pass;
 
     res.json({ status: (user=="emnichtda"&&pass=="emnichtda") ? "Successfully logged in" : "Wrong credentials" })
-
-
-    res.json({ user: user, pass: pass });
 })
 
 app.get('/:token', (req, res, next) => {
