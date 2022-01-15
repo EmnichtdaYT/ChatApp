@@ -1,7 +1,7 @@
 // Entry Point of the API Server 
-  
+
 const express = require('express');
-  
+
 /* Creates an Express application. 
    The express() function is a top-level 
    function exported by the express module.
@@ -9,7 +9,7 @@ const express = require('express');
 const app = express();
 const Pool = require('pg').Pool;
 const cors = require('cors');
-  
+
 const pool = new Pool({
     user: 'postgres',
     host: 'localhost',
@@ -18,8 +18,8 @@ const pool = new Pool({
     dialect: 'postgres',
     port: 5432
 });
-  
-  
+
+
 /* To handle the HTTP Methods Body Parser 
    is used, Generally used to extract the 
    entire body portion of an incoming 
@@ -30,8 +30,8 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cors());
-  
-  
+
+
 pool.connect((err, client, release) => {
     if (err) {
         return console.error(
@@ -46,7 +46,7 @@ pool.connect((err, client, release) => {
         console.log("Connected to Database !")
     })
 })
-  
+
 app.get('/testdata', (req, res, next) => {
     console.log("TEST DATA :");
     pool.query('Select * from test')
@@ -63,7 +63,7 @@ app.post('/testdata', (req, res, netx) => {
     console.log(req.body.data);
     res.json(JSON.parse('{"status":"success"}'));
 })
-  
+
 app.get('/generalchat', (req, res, next) => {
     console.log("GENERALCHAT:");
     pool.query('Select * from generalchat')
@@ -83,20 +83,18 @@ app.post('/generalchat', (req, res, next) => {
     req.body;
     pool.query("INSERT INTO generalchat (message) VALUES ('" + req.body.data + "')")
     console.log(req.body.data);
-    res.json({status:'success'});
+    res.json({ status: 'success' });
 })
 
-
+app.post('/login', (req, res, next) => {
+    res.json({
+        user: req.body.user,
+        pass: req.body.pass
+    })
+})
 
 app.get('/:token', (req, res, next) => {
-    res.json({token:req.params.token});
-})
-  
-app.get('/login', (req, res, next) => {
-    res.json({
-        user:req.body.user,
-        pass:req.body.pass
-    })
+    res.json({ token: req.params.token });
 })
 
 
