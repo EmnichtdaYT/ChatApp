@@ -1,46 +1,63 @@
-function initDatabaseAndServer() {
-  // Entry Point of the API Server
+// Entry Point of the API Server
 
-  const express = require("express");
+const express = require("express");
 
-  /* Creates an Express application. 
+/* Creates an Express application. 
    The express() function is a top-level 
    function exported by the express module.
 */
-  const app = express();
-  const Pool = require("pg").Pool;
-  const cors = require("cors");
+let app = express();
+const Pool = require("pg").Pool;
+const cors = require("cors");
 
-  const pool = new Pool({
-    user: "postgres",
-    host: "localhost",
-    database: "chatapp",
-    password: "zoe",
-    dialect: "postgres",
-    port: 5432,
-  });
+const pool = new Pool({
+  user: "postgres",
+  host: "localhost",
+  database: "chatapp",
+  password: "zoe",
+  dialect: "postgres",
+  port: 5432,
+});
 
-  /* To handle the HTTP Methods Body Parser 
+/* To handle the HTTP Methods Body Parser 
    is used, Generally used to extract the 
    entire body portion of an incoming 
    request stream and exposes it on req.body 
 */
-  const bodyParser = require("body-parser");
-  app.use(bodyParser.json());
-  app.use(bodyParser.urlencoded({ extended: false }));
-  app.use(express.json());
-  app.use(cors());
+const bodyParser = require("body-parser");
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.json());
+app.use(cors());
 
-  pool.connect((err, client, release) => {
+pool.connect((err, client, release) => {
+  if (err) {
+    return console.error("Error acquiring client", err.stack);
+  }
+  client.query("SELECT NOW()", (err, result) => {
+    release();
     if (err) {
-      return console.error("Error acquiring client", err.stack);
+      return console.error("Error executing query", err.stack);
     }
-    client.query("SELECT NOW()", (err, result) => {
-      release();
-      if (err) {
-        return console.error("Error executing query", err.stack);
-      }
-      console.log("Connected to Database !");
-    });
+    console.log("Connected to Database !");
+  });
+});
+
+function startServer() {
+  // Require the Routes API
+  // Create a Server and run it on the port 3000
+  const server = app.listen(3000, function () {
+    let host = server.address().address;
+    let port = server.address().port;
+    // Starting the Server at the port 3000
   });
 }
+
+function getApp() {
+  return app;
+}
+
+module.exports = {
+  getApp,
+  startServer,
+};
