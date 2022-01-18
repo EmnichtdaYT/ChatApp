@@ -1,8 +1,9 @@
 const serverAndDatabase = require("./serverAndDatabase.js")
 const loginAndRegister = require("./loginAndRegister.js")
 
-app = serverAndDatabase.getApp();
+const app = serverAndDatabase.getApp();
+const database = serverAndDatabase.getDatabase();
 
-loginAndRegister.initLoginAndRegister(app);
+loginAndRegister.initLoginAndRegister(app, database);
 
 serverAndDatabase.startServer();

@@ -1,21 +1,32 @@
-function initLoginAndRegister(app) {
+let db;
+
+function initLoginAndRegister(app, database) {
+
+  db = database;
+
   app.post("/login", (req, res, next) => {
     var user = req.body.user;
     var pass = req.body.pass;
-
-    res.json({
-      token: login(user, pass),
-    });
+    login(user, pass).then((result) => {
+      res.json({
+        token: result,
+      });
+    })
   });
 
   app.post("/register", (req, res, next) => {
     var user = req.body.user;
     var pass = req.body.pass;
 
-    res.json({ registered: register(user, pass) });
+    register(user, pass).then((result) => {
+      res.json({
+        registered: result[0],
+        status: result[1]
+      });
+    });
   });
 
-  
+
   app.get("/:token", (req, res, next) => {
     var token = req.params.token;
     res.json({ tokenCorrect: token in userTokens });
@@ -25,36 +36,33 @@ function initLoginAndRegister(app) {
 var userPasswords = {};
 var userTokens = {};
 
-function register(username, password) {
-  if(!username || !password || username.length < 3 || password.length < 3){
-    return false;
+async function register(username, password) {
+  if (!username || !password || username.length < 3 || password.length < 3) {
+    return [false, "username or password too short"];
   }
 
-  if (username in userPasswords) {
-    return false;
+  var result = await db.query("SELECT COUNT(*) FROM users WHERE name = $1", [username])
+
+  if (result.rows[0].count > 0) {
+    return [false, "user already exists"];
   }
-  userPasswords[username] = password;
-  return true;
+
+  var result = await db.query("INSERT INTO users VALUES ($1, $2)", [username, password])
+
+  return [true, "success"];
+
 }
 
-function login(username, password) {
-  if (!isPasswordCorrect(username, password)) {
-    return null;
+async function login(username, password) {
+  if (await isPasswordCorrect(username, password)) {
+    return generateToken(username)
   }
-
-  return generateToken(username);
+  return null;
 }
 
-function isPasswordCorrect(username, password) {
-  if (!username in userPasswords) {
-    return false;
-  }
-
-  if (userPasswords[username] === password) {
-    return true;
-  }
-
-  return false;
+async function isPasswordCorrect(username, password) {
+  var result = await db.query("SELECT * FROM users WHERE name = $1 AND pass = $2", [username, password])
+  return result.rows.length == 1;
 }
 
 function generateRandomString() {

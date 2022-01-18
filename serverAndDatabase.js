@@ -10,7 +10,7 @@ let app = express();
 const Pool = require("pg").Pool;
 const cors = require("cors");
 
-const pool = new Pool({
+let pool = new Pool({
   user: "postgres",
   host: "localhost",
   database: "chatapp",
@@ -57,7 +57,12 @@ function getApp() {
   return app;
 }
 
+function getDatabase(){
+  return pool;
+}
+
 module.exports = {
   getApp,
+  getDatabase,
   startServer,
 };
