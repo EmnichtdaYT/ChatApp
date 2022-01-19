@@ -27,9 +27,32 @@ function initLoginAndRegister(app, database) {
   });
 
 
-  app.get("/:token", (req, res, next) => {
+  app.get("/:token", async (req, res, next) => {
     var token = req.params.token;
-    res.json({ tokenCorrect: token in userTokens });
+    var tokenCorrect = token in userTokens;
+
+    var array = {};
+
+    if (!tokenCorrect) {
+      res.json({ tokenCorrect: false });
+    }
+
+    var result = await db.query("SELECT chatid FROM chatpermissions WHERE haspermission = $1", [userTokens[token]])
+
+    for(i = 0; i < result.rows.length; i++){
+      var element = result.rows[i].chatid;
+      var re = await db.query("SELECT haspermission FROM chatpermissions WHERE chatid = $1", [element])
+      var temparray = [];
+
+      for(j = 0; j < re.rows.length; j++){
+        temparray[j] = re.rows[j].haspermission;
+      }
+
+      array[element] = temparray;
+    }
+
+    res.json({ tokenCorrect: true, chats: array })
+
   });
 }
 
@@ -68,7 +91,7 @@ async function isPasswordCorrect(username, password) {
 function generateRandomString() {
   var result = "";
   var characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!";
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   var charactersLength = characters.length;
   for (var i = 0; i < 20; i++) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
