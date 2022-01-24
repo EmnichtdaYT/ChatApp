@@ -35,6 +35,7 @@ function initLoginAndRegister(app, database) {
 
     if (!tokenCorrect) {
       res.json({ tokenCorrect: false });
+      return;
     }
 
     var result = await db.query("SELECT chatid FROM chatpermissions WHERE haspermission = $1", [userTokens[token]])
@@ -54,9 +55,24 @@ function initLoginAndRegister(app, database) {
     res.json({ tokenCorrect: true, chats: array })
 
   });
+
+  app.get("/:token/:chatid", async (req, res, next) => {
+    var token = req.params.token;
+    var tokenCorrect = token in userTokens;
+    var chatid = req.params.chatid
+    
+    if(!tokenCorrect){
+      res.json({ tokenCorrect: false });
+      return;
+    }
+
+    var re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1", [chatid])
+
+    res.json({tokenCorrect: true, messages: re.rows})
+
+  })
 }
 
-var userPasswords = {};
 var userTokens = {};
 
 async function register(username, password) {
