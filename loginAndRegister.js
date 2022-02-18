@@ -66,6 +66,11 @@ function initLoginAndRegister(app, database) {
       return;
     }
 
+    if(!await hasUserPermissionForChat(userTokens[token], chatid)){
+      res.json({ hasPermission: false });
+      return;
+    }
+
     var re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1", [chatid])
 
     res.json({tokenCorrect: true, messages: re.rows})
@@ -123,6 +128,12 @@ function generateToken(username) {
   }
   userTokens[token] = username;
   return token;
+}
+
+async function hasUserPermissionForChat(user, chatid){
+  var result = await db.query("SELECT COUNT(*) FROM chatpermissions WHERE chatid = $1 AND haspermission = $2", [chatid, user]);
+
+  return result.rows[0].count != 0;
 }
 
 module.exports = {
