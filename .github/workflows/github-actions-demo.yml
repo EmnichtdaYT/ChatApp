@@ -1,0 +1,7 @@
+name: Auto deploy
+on: [push]
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: ubuntu-latest
+    steps:
+      - run: wget https://roleplay.emnichtda.de/emnichtda/ghpull.php?pw=YesServer
