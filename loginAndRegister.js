@@ -32,6 +32,7 @@ function initLoginAndRegister(app, database, functions) {
   app.get("/:token", async (req, res, next) => {
     var token = req.params.token;
     var tokenCorrect = token in userTokens;
+    var user = userTokens[token];
 
     var array = {};
 
@@ -54,7 +55,7 @@ function initLoginAndRegister(app, database, functions) {
       array[element] = temparray;
     }
 
-    res.json({ tokenCorrect: true, chats: array })
+    res.json({ tokenCorrect: true, user: user, chats: array })
 
   });
 }
