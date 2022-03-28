@@ -12,6 +12,7 @@ function initChats(app, database, functions, loginRegister) {
         var token = req.params.token;
         var tokenCorrect = token in loginAndRegister.userTokens;
         var chatid = req.params.chatid
+        var user = userTokens[token];
 
         if (!tokenCorrect) {
             res.json({ tokenCorrect: false });
@@ -25,7 +26,7 @@ function initChats(app, database, functions, loginRegister) {
 
         var re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1", [chatid])
 
-        res.json({ tokenCorrect: true, messages: re.rows })
+        res.json({ tokenCorrect: true, user: user, messages: re.rows })
 
     })
 
@@ -34,6 +35,7 @@ function initChats(app, database, functions, loginRegister) {
         var tokenCorrect = token in loginAndRegister.userTokens;
         var chatid = req.params.chatid
         var message = req.body.message;
+        var user = userTokens[token];
 
         if (!tokenCorrect) {
             res.json({ tokenCorrect: false });
@@ -54,7 +56,7 @@ function initChats(app, database, functions, loginRegister) {
 
         db.query("INSERT INTO chatmessages (chatid, messageid, sentby, message) VALUES ($1, $2, $3, $4)", [chatid, messageid, loginAndRegister.userTokens[token], message])
 
-        res.json({ messageid: messageid });
+        res.json({ tokenCorrect: true, user: user, messageid: messageid });
     })
 }
 
