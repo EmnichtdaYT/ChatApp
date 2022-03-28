@@ -10,6 +10,7 @@ let app = express();
 const Pool = require("pg").Pool;
 const cors = require("cors");
 const https = require("https");
+var fs = require("fs");
 
 let pool = new Pool({
   user: "postgres",
