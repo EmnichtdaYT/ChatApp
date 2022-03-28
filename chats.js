@@ -12,6 +12,8 @@ function initChats(app, database, functions, loginRegister) {
         var token = req.params.token;
         var tokenCorrect = token in loginAndRegister.userTokens;
         var chatid = req.params.chatid
+        var limit = req.query.limit;
+        var olderthan = req.query.olderthan;
         var user = loginAndRegister.userTokens[token];
 
         if (!tokenCorrect) {
@@ -24,7 +26,16 @@ function initChats(app, database, functions, loginRegister) {
             return;
         }
 
-        var re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1", [chatid])
+        if(!limit||limit>200){
+            limit = 50
+        }
+
+        var re;
+        if(olderthan){
+            re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 AND timestamp < $2 ORDER BY timestamp DESC LIMIT $3", [chatid, olderthan, limit])
+        }else{
+            re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 ORDER BY timestamp DESC LIMIT $2", [chatid, limit])
+        }
 
         res.json({ tokenCorrect: true, user: user, messages: re.rows })
 
@@ -56,7 +67,7 @@ function initChats(app, database, functions, loginRegister) {
 
         db.query("INSERT INTO chatmessages (chatid, messageid, sentby, message) VALUES ($1, $2, $3, $4)", [chatid, messageid, loginAndRegister.userTokens[token], message])
 
-        res.json({ tokenCorrect: true, user: user, messageid: messageid });
+        res.json({ tokenCorrect: true, user: user, hasPermission: true, messageid: messageid });
     })
 }
 
