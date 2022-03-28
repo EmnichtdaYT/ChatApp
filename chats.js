@@ -12,7 +12,7 @@ function initChats(app, database, functions, loginRegister) {
         var token = req.params.token;
         var tokenCorrect = token in loginAndRegister.userTokens;
         var chatid = req.params.chatid
-        var user = userTokens[token];
+        var user = loginAndRegister.userTokens[token];
 
         if (!tokenCorrect) {
             res.json({ tokenCorrect: false });
@@ -35,7 +35,7 @@ function initChats(app, database, functions, loginRegister) {
         var tokenCorrect = token in loginAndRegister.userTokens;
         var chatid = req.params.chatid
         var message = req.body.message;
-        var user = userTokens[token];
+        var user = loginAndRegister.userTokens[token];
 
         if (!tokenCorrect) {
             res.json({ tokenCorrect: false });
