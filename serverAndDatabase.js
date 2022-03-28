@@ -9,6 +9,7 @@ const express = require("express");
 let app = express();
 const Pool = require("pg").Pool;
 const cors = require("cors");
+const https = require("https");
 
 let pool = new Pool({
   user: "postgres",
@@ -46,18 +47,26 @@ pool.connect((err, client, release) => {
 function startServer() {
   // Require the Routes API
   // Create a Server and run it on the port 3000
-  const server = app.listen(3000, function () {
-    let host = server.address().address;
-    let port = server.address().port;
-    // Starting the Server at the port 3000
-  });
+  const server = https
+    .createServer(
+      {
+        key: fs.readFileSync("/server.key"),
+        cert: fs.readFileSync("/server.cert"),
+      },
+      app
+    )
+    .listen(3000, function () {
+      let host = server.address().address;
+      let port = server.address().port;
+      // Starting the Server at the port 3000
+    });
 }
 
 function getApp() {
   return app;
 }
 
-function getDatabase(){
+function getDatabase() {
   return pool;
 }
 
