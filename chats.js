@@ -12,6 +12,9 @@ function initChats(app, database, functions, loginRegister) {
         var token = req.params.token;
         var tokenCorrect = token in loginAndRegister.userTokens;
         var chatid = req.params.chatid
+        var limit = req.query.limit;
+        var olderthan = req.query.olderthan;
+        var user = loginAndRegister.userTokens[token];
 
         if (!tokenCorrect) {
             res.json({ tokenCorrect: false });
@@ -23,9 +26,18 @@ function initChats(app, database, functions, loginRegister) {
             return;
         }
 
-        var re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1", [chatid])
+        if(!limit||limit>200){
+            limit = 50
+        }
 
-        res.json({ tokenCorrect: true, messages: re.rows })
+        var re;
+        if(olderthan){
+            re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 AND timestamp < $2 ORDER BY timestamp LIMIT $3", [chatid, olderthan, limit])
+        }else{
+            re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 ORDER BY timestamp LIMIT $2", [chatid, limit])
+        }
+
+        res.json({ tokenCorrect: true, user: user, hasPermission: true, messages: re.rows })
 
     })
 
@@ -33,7 +45,9 @@ function initChats(app, database, functions, loginRegister) {
         var token = req.params.token;
         var tokenCorrect = token in loginAndRegister.userTokens;
         var chatid = req.params.chatid
+        var user = loginAndRegister.userTokens[token];
         var message = req.body.message;
+        
 
         if (!tokenCorrect) {
             res.json({ tokenCorrect: false });
@@ -54,7 +68,30 @@ function initChats(app, database, functions, loginRegister) {
 
         db.query("INSERT INTO chatmessages (chatid, messageid, sentby, message) VALUES ($1, $2, $3, $4)", [chatid, messageid, loginAndRegister.userTokens[token], message])
 
-        res.json({ messageid: messageid });
+        res.json({ tokenCorrect: true, user: user, hasPermission: true, messageid: messageid });
+    })
+
+    app.get("/:token/:chatid/:messageid", async (req, res, next) => {
+        var token = req.params.token;
+        var tokenCorrect = token in loginAndRegister.userTokens;
+        var chatid = req.params.chatid
+        var user = loginAndRegister.userTokens[token];
+        var messageid = req.params.messageid;
+
+        if (!tokenCorrect) {
+            res.json({ tokenCorrect: false });
+            return;
+        }
+
+        if (!await hasUserPermissionForChat(loginAndRegister.userTokens[token], chatid)) {
+            res.json({ hasPermission: false });
+            return;
+        }
+
+        re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 AND messageid = $2", [chatid, messageid])
+
+        res.json({ tokenCorrect: true, user: user, hasPermission: true, message: re.rows })
+
     })
 }
 
