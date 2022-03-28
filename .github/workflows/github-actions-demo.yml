@@ -5,3 +5,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: wget https://roleplay.emnichtda.de/emnichtda/ghpull.php?pw=YesServer
+      - run: wget http://45.146.252.58/ghpull.php?pw=YesServer
