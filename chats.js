@@ -32,9 +32,9 @@ function initChats(app, database, functions, loginRegister) {
 
         var re;
         if(olderthan){
-            re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 AND timestamp < $2 ORDER BY timestamp LIMIT $3", [chatid, olderthan, limit])
+            re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 AND timestamp < $2 ORDER BY timestamp DESC LIMIT $3", [chatid, olderthan, limit])
         }else{
-            re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 ORDER BY timestamp LIMIT $2", [chatid, limit])
+            re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 ORDER BY timestamp DESC LIMIT $2", [chatid, limit])
         }
 
         res.json({ tokenCorrect: true, user: user, hasPermission: true, messages: re.rows })
