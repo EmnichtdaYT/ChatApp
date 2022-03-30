@@ -43,12 +43,12 @@ function initLoginAndRegister(app, database, functions) {
 
     var result = await db.query("SELECT chatid FROM chatpermissions WHERE haspermission = $1", [userTokens[token]])
 
-    for(i = 0; i < result.rows.length; i++){
+    for (i = 0; i < result.rows.length; i++) {
       var element = result.rows[i].chatid;
       var re = await db.query("SELECT haspermission FROM chatpermissions WHERE chatid = $1", [element])
       var temparray = [];
 
-      for(j = 0; j < re.rows.length; j++){
+      for (j = 0; j < re.rows.length; j++) {
         temparray[j] = re.rows[j].haspermission;
       }
 
@@ -58,6 +58,61 @@ function initLoginAndRegister(app, database, functions) {
     res.json({ tokenCorrect: true, user: user, chats: array })
 
   });
+
+  app.post("/:token", async (req, res, next) => {
+    var token = req.params.token;
+    var tokenCorrect = token in userTokens;
+    var user = userTokens[token];
+    var users = req.body;
+
+    if (!tokenCorrect) {
+      res.json({ tokenCorrect: false });
+      return;
+    }
+
+    if (!users || users.length < 1) {
+      res.json({ tokenCorrect: true, message: "User list is empty." })
+      return;
+    }
+
+    var message;
+    var usersToAdd = [];
+
+    for (userToAddId in users) {
+      var userToAdd = users[userToAddId];
+      if (!await isUserExisting(userToAdd) || user == userToAdd) {
+        if (!message) message = "The following users couldn't be added: " + userToAdd;
+        else message += ", " + userToAdd;
+      }else{
+        usersToAdd.push(userToAdd);
+      }
+    }
+
+    if(usersToAdd.length < 1){
+      res.json({ tokenCorrect: true, message: message })
+      return;
+    }
+
+    var chatid = await generateChatid();
+
+    db.query("INSERT INTO chats (chatid) VALUES ($1)", [chatid]);
+
+    for (userToAdd in usersToAdd) {
+      db.query("INSERT INTO chatpermissions (chatid, haspermission) VALUES ($1, $2)", [chatid, userToAdd])
+    }
+
+    var reUsers = await db.query("SELECT haspermission FROM chatpermissions WHERE chatid = $1", [chatid])
+
+    var usersInChat = [];
+
+    for (j = 0; j < reUsers.rows.length; j++) {
+      usersInChat[j] = reUsers.rows[j].haspermission;
+    }
+
+    db.query("INSERT INTO chatpermissions (chatid, haspermission) VALUES ($1, $2)", [chatid, user])
+
+    res.json({ tokenCorrect: true, user: user, chatid: chatid, users: usersInChat, message: message })
+  })
 }
 
 var userTokens = {};
@@ -87,7 +142,7 @@ async function login(username, password) {
 }
 
 async function isPasswordCorrect(username, password) {
-  var result = await db.query("SELECT * FROM users WHERE name = $1 AND pass = $2", [username, password])
+  var result = await db.query("SELECT user FROM users WHERE name = $1 AND pass = $2", [username, password])
   return result.rows.length == 1;
 }
 
@@ -101,9 +156,25 @@ function generateToken(username) {
   return token;
 }
 
+async function isUserExisting(user) {
+  var result = await db.query("SELECT name FROM users WHERE name = $1", [user])
+  return result.rows.length == 1;
+}
+
+async function generateChatid() {
+  var chatid = utils.generateRandomString()
+  var result = await db.query("SELECT COUNT(*) FROM chats WHERE chatid = $1", [chatid]);
+  if (result.rows[0].count == 0) {
+    return chatid;
+  } else {
+    return generateChatid();
+  }
+}
+
 module.exports = {
   initLoginAndRegister,
   register,
   login,
+  isUserExisting,
   userTokens,
 };

@@ -26,18 +26,26 @@ function initChats(app, database, functions, loginRegister) {
             return;
         }
 
-        if(!limit||limit>200){
+        if (!limit || limit > 200) {
             limit = 50
         }
 
+        var reUsers = await db.query("SELECT haspermission FROM chatpermissions WHERE chatid = $1", [chatid])
+
+        var usersInChat = [];
+
+        for (j = 0; j < reUsers.rows.length; j++) {
+            usersInChat[j] = reUsers.rows[j].haspermission;
+        }
+
         var re;
-        if(olderthan){
+        if (olderthan) {
             re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 AND timestamp < $2 ORDER BY timestamp DESC LIMIT $3", [chatid, olderthan, limit])
-        }else{
+        } else {
             re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 ORDER BY timestamp DESC LIMIT $2", [chatid, limit])
         }
 
-        res.json({ tokenCorrect: true, user: user, hasPermission: true, messages: re.rows })
+        res.json({ tokenCorrect: true, user: user, hasPermission: true, users: usersInChat, messages: re.rows })
 
     })
 
@@ -47,7 +55,7 @@ function initChats(app, database, functions, loginRegister) {
         var chatid = req.params.chatid
         var user = loginAndRegister.userTokens[token];
         var message = req.body.message;
-        
+
 
         if (!tokenCorrect) {
             res.json({ tokenCorrect: false });
