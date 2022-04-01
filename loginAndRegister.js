@@ -98,20 +98,12 @@ function initLoginAndRegister(app, database, functions) {
     db.query("INSERT INTO chats (chatid) VALUES ($1)", [chatid]);
 
     for (userToAdd in usersToAdd) {
-      db.query("INSERT INTO chatpermissions (chatid, haspermission) VALUES ($1, $2)", [chatid, userToAdd])
-    }
-
-    var reUsers = await db.query("SELECT haspermission FROM chatpermissions WHERE chatid = $1", [chatid])
-
-    var usersInChat = [];
-
-    for (j = 0; j < reUsers.rows.length; j++) {
-      usersInChat[j] = reUsers.rows[j].haspermission;
+      db.query("INSERT INTO chatpermissions (chatid, haspermission) VALUES ($1, $2)", [chatid, usersToAdd[userToAdd]])
     }
 
     db.query("INSERT INTO chatpermissions (chatid, haspermission) VALUES ($1, $2)", [chatid, user])
 
-    res.json({ tokenCorrect: true, user: user, chatid: chatid, users: usersInChat, message: message })
+    res.json({ tokenCorrect: true, user: user, chatid: chatid, users: usersToAdd, message: message })
   })
 }
 
