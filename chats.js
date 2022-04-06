@@ -76,7 +76,11 @@ function initChats(app, database, functions, loginRegister) {
 
         db.query("INSERT INTO chatmessages (chatid, messageid, sentby, message) VALUES ($1, $2, $3, $4)", [chatid, messageid, loginAndRegister.userTokens[token], message])
 
-        res.json({ tokenCorrect: true, user: user, hasPermission: true, messageid: messageid });
+        responseJson = { tokenCorrect: true, user: user, hasPermission: true, messageid: messageid };
+
+        fireMessageCreateEvent(chatid, messageid);
+
+        res.json(responseJson);
     })
 
     app.get("/:token/:chatid/:messageid", async (req, res, next) => {
@@ -109,6 +113,35 @@ async function hasUserPermissionForChat(user, chatid) {
     return result.rows[0].count != 0;
 }
 
+function fireMessageCreateEvent(chatid, messageid) {
+    if (!(chatid in socketListensTo)) {
+        return;
+    }
+
+    re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 AND messageid = $2", [chatid, messageid])
+
+    for (socket in socketListensTo[chatid]) {
+
+        try {
+
+            if (socket.token in loginAndRegister.userTokens) {
+                if (hasUserPermissionForChat(loginAndRegister.userTokens[socket.token])) {
+                    socket.socket.write(JSON.stringify({ message: re.rows }))
+                } else {
+                    socketListensTo[chatid] = socketListensTo[chatid].filter(value => value !== socket)
+                    socket.socket.write(JSON.stringify({ message: '401 - Not authorized anymore for chat ' + chatid + '. Removed you from listeners.' }))
+                }
+            } else {
+                socket.socket.write(JSON.stringify({ message: "401 - Incorrect token" }))
+                socketListensTo[chatid] = socketListensTo[chatid].filter(value => value !== socket)
+                socket.socket.destroy();
+            }
+        } catch (exception) {
+            socketListensTo[chatid] = socketListensTo[chatid].filter(value => value !== socket)
+        }
+    }
+}
+
 async function generateMessageIdForChat(chatid) {
     var messageid = utils.generateRandomString()
     var result = await db.query("SELECT COUNT(*) FROM chatmessages WHERE chatid = $1 AND messageid = $2", [chatid, messageid]);
@@ -119,6 +152,23 @@ async function generateMessageIdForChat(chatid) {
     }
 }
 
+async function doesChatExist(id) {
+    var result = await db.query("SELECT COUNT(*) FROM chats WHERE chatid = $1", [id])
+    return result.rows[0].count != 0;
+}
+
+var socketListensTo = {};
+
+function addChatListener(instance, chatid) {
+    if (!(chatid in socketListensTo)) {
+        socketListensTo[chatid] = [];
+    }
+    socketListensTo[chatid].push(instance);
+}
+
 module.exports = {
     initChats,
+    doesChatExist,
+    hasUserPermissionForChat,
+    addChatListener,
 };

@@ -45,18 +45,20 @@ pool.connect((err, client, release) => {
   });
 });
 
+var server;
+
 function startServer() {
   // Require the Routes API
   // Create a Server and run it on the port 3000
-  const server = https
+  server = /*https
     .createServer(
       {
         key: fs.readFileSync("/server.key"),
         cert: fs.readFileSync("/server.cert"),
       },
       app
-    )
-    .listen(3000, function () {
+    )*/
+    app.listen(3000, function () {
       let host = server.address().address;
       let port = server.address().port;
       // Starting the Server at the port 3000
@@ -67,6 +69,10 @@ function getApp() {
   return app;
 }
 
+function getServer(){
+  return server;
+}
+
 function getDatabase() {
   return pool;
 }
@@ -75,4 +81,5 @@ module.exports = {
   getApp,
   getDatabase,
   startServer,
+  getServer,
 };
