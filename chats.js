@@ -78,7 +78,9 @@ function initChats(app, database, functions, loginRegister) {
 
         responseJson = { tokenCorrect: true, user: user, hasPermission: true, messageid: messageid };
 
-        fireMessageCreateEvent(chatid, messageid);
+        setTimeout(function () { //This is here because I found some sort of bug that the rows are empty at the 2nd message and this fixed it. I know this isn't optimal but I have not yet found another way to fix this
+            fireMessageCreateEvent(chatid, messageid)
+        }, 5)
 
         res.json(responseJson);
     })
@@ -118,7 +120,7 @@ async function fireMessageCreateEvent(chatid, messageid) {
         return;
     }
 
-    re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 AND messageid = $2", [chatid, messageid])
+    const resultM = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 AND messageid = $2", [chatid, messageid])
 
     for (socketId in socketListensTo[chatid]) {
         var socket = socketListensTo[chatid][socketId]
@@ -127,7 +129,7 @@ async function fireMessageCreateEvent(chatid, messageid) {
 
                 if (socket.token in loginAndRegister.userTokens) {
                     if (await hasUserPermissionForChat(loginAndRegister.userTokens[socket.token], chatid)) {
-                        socket.socket.send(JSON.stringify({ message: re.rows }))
+                        socket.socket.send(JSON.stringify({ message: resultM.rows }))
                     } else {
                         socketListensTo[chatid] = socketListensTo[chatid].filter(value => value !== socket)
                         socket.socket.send(JSON.stringify({ message: '401 - Not authorized anymore for chat ' + chatid + '. Removed you from listeners.' }))
@@ -137,7 +139,7 @@ async function fireMessageCreateEvent(chatid, messageid) {
                     socketListensTo[chatid] = socketListensTo[chatid].filter(value => value !== socket)
                     socket.socket.close();
                 }
-            }else{
+            } else {
                 socketListensTo[chatid] = socketListensTo[chatid].filter(value => value !== socket)
             }
         } catch (exception) {
