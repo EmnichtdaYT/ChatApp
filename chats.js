@@ -63,12 +63,12 @@ function initChats(app, database, functions, loginRegister) {
         }
 
         if (!await hasUserPermissionForChat(loginAndRegister.userTokens[token], chatid)) {
-            res.json({ hasPermission: false });
+            res.json({ tokenCorrect: true, user: user, hasPermission: false });
             return;
         }
 
         if (!message) {
-            res.json({ error: "message is not defined" })
+            res.json({ tokenCorrect: true, user: user, hasPermission: true, error: "message is not defined" })
             return;
         }
 
@@ -96,7 +96,7 @@ function initChats(app, database, functions, loginRegister) {
         }
 
         if (!await hasUserPermissionForChat(loginAndRegister.userTokens[token], chatid)) {
-            res.json({ hasPermission: false });
+            res.json({ tokenCorrect: true, user: user, hasPermission: false });
             return;
         }
 
@@ -113,31 +113,36 @@ async function hasUserPermissionForChat(user, chatid) {
     return result.rows[0].count != 0;
 }
 
-function fireMessageCreateEvent(chatid, messageid) {
+async function fireMessageCreateEvent(chatid, messageid) {
     if (!(chatid in socketListensTo)) {
         return;
     }
 
     re = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 AND messageid = $2", [chatid, messageid])
 
-    for (socket in socketListensTo[chatid]) {
-
+    for (socketId in socketListensTo[chatid]) {
+        var socket = socketListensTo[chatid][socketId]
         try {
+            if (!socket.closed) {
 
-            if (socket.token in loginAndRegister.userTokens) {
-                if (hasUserPermissionForChat(loginAndRegister.userTokens[socket.token])) {
-                    socket.socket.write(JSON.stringify({ message: re.rows }))
+                if (socket.token in loginAndRegister.userTokens) {
+                    if (await hasUserPermissionForChat(loginAndRegister.userTokens[socket.token], chatid)) {
+                        socket.socket.send(JSON.stringify({ message: re.rows }))
+                    } else {
+                        socketListensTo[chatid] = socketListensTo[chatid].filter(value => value !== socket)
+                        socket.socket.send(JSON.stringify({ message: '401 - Not authorized anymore for chat ' + chatid + '. Removed you from listeners.' }))
+                    }
                 } else {
+                    socket.socket.send(JSON.stringify({ message: "401 - Incorrect token" }))
                     socketListensTo[chatid] = socketListensTo[chatid].filter(value => value !== socket)
-                    socket.socket.write(JSON.stringify({ message: '401 - Not authorized anymore for chat ' + chatid + '. Removed you from listeners.' }))
+                    socket.socket.close();
                 }
-            } else {
-                socket.socket.write(JSON.stringify({ message: "401 - Incorrect token" }))
+            }else{
                 socketListensTo[chatid] = socketListensTo[chatid].filter(value => value !== socket)
-                socket.socket.destroy();
             }
         } catch (exception) {
             socketListensTo[chatid] = socketListensTo[chatid].filter(value => value !== socket)
+            console.log(exception)
         }
     }
 }
@@ -154,7 +159,7 @@ async function generateMessageIdForChat(chatid) {
 
 async function doesChatExist(id) {
     var result = await db.query("SELECT COUNT(*) FROM chats WHERE chatid = $1", [id])
-    return result.rows[0].count != 0;
+    return result.rows[0].count > 0;
 }
 
 var socketListensTo = {};

@@ -1,12 +1,14 @@
 const express = require('express');
 const ws = require('ws')
 var wsServer;
+var loginAndRegister;
+var chats;
 
 var webSockets = [];
 
-function initWebsocket(server, chats, loginAndRegister) {
-    this.chats = chats;
-    this.loginAndRegister = loginAndRegister;
+function initWebsocket(server, chatsInstance, loginAndRegisterInstance) {
+    chats = chatsInstance;
+    loginAndRegister = loginAndRegisterInstance;
 
     wsServer = new ws.Server({ noServer: true })
     server.on('upgrade', (request, socket, head) => {
@@ -24,42 +26,44 @@ function initWebsocket(server, chats, loginAndRegister) {
 class WebsocketConnection{
     constructor(socket){
         this.socket = socket;
-        registerOnMessageListener(socket);
+        this.registerOnMessageListener(socket);
     }
     registerOnMessageListener(socket){
         socket.on('message', (data) => {
             var message = data.toString();
             if(this.token == null){
-                setToken(message)
+                this.setToken(message)
+            }else{
+                this.registerListener(message);
             }
-            registerListener(message);
         })
     }
 
     setToken(token){
         if(!(token in loginAndRegister.userTokens)){
-            this.socket.write(JSON.stringify( {message: "401 - Incorrect token"} ));
-            this.socket.destroy();
+            this.socket.send(JSON.stringify( {message: "401 - Incorrect token"} ));
+            this.socket.close();
             return; //Token incorrect
         }
+        this.token = token;
     }
     
-    registerListener(id){
-        if(!(token in loginAndRegister.userTokens)){
-            this.socket.write(JSON.stringify( {message: "401 - Incorrect token"} ));
-            this.socket.destroy();
+    async registerListener(id){
+        if(!(this.token in loginAndRegister.userTokens)){
+            this.socket.send(JSON.stringify( {message: "401 - Incorrect token"} ));
+            this.socket.close();
             return; //Token incorrect
         }
-        if(!chats.existsChat(id)){
-            this.socket.write(JSON.stringify({message: "404 - Chat not found" }));
+        if(!await chats.doesChatExist(id)){
+            this.socket.send(JSON.stringify({message: "404 - Chat not found" }));
             return; //Not exist
         }
-        if(!chats.hasUserPermissionForChat(this.token, id)){
-            this.socket.write(JSON.stringify({ message: "401 - Not authorized" }))
+        if(!await chats.hasUserPermissionForChat(loginAndRegister.userTokens[this.token], id)){
+            this.socket.send(JSON.stringify({ message: "401 - Not authorized" }))
             return; //Not authorized
         }
-        this.chats.addChatListener(this, id) //Everything ok c:
-        this.socket.write(JSON.stringify({ message: "202 - OK" }))
+        chats.addChatListener(this, id) //Everything ok c:
+        this.socket.send(JSON.stringify({ message: "202 - OK" }))
     }
 }
 
