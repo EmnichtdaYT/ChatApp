@@ -63,12 +63,12 @@ function initChats(app, database, functions, loginRegister) {
         }
 
         if (!await hasUserPermissionForChat(loginAndRegister.userTokens[token], chatid)) {
-            res.json({ hasPermission: false });
+            res.json({ tokenCorrect: true, user: user, hasPermission: false });
             return;
         }
 
         if (!message) {
-            res.json({ error: "message is not defined" })
+            res.json({ tokenCorrect: true, user: user, hasPermission: true, error: "message is not defined" })
             return;
         }
 
@@ -76,7 +76,13 @@ function initChats(app, database, functions, loginRegister) {
 
         db.query("INSERT INTO chatmessages (chatid, messageid, sentby, message) VALUES ($1, $2, $3, $4)", [chatid, messageid, loginAndRegister.userTokens[token], message])
 
-        res.json({ tokenCorrect: true, user: user, hasPermission: true, messageid: messageid });
+        responseJson = { tokenCorrect: true, user: user, hasPermission: true, messageid: messageid };
+
+        setTimeout(function () { //This is here because I found some sort of bug that the rows are empty at the 2nd message and this fixed it. I know this isn't optimal but I have not yet found another way to fix this
+            fireMessageCreateEvent(chatid, messageid)
+        }, 5)
+
+        res.json(responseJson);
     })
 
     app.get("/:token/:chatid/:messageid", async (req, res, next) => {
@@ -92,7 +98,7 @@ function initChats(app, database, functions, loginRegister) {
         }
 
         if (!await hasUserPermissionForChat(loginAndRegister.userTokens[token], chatid)) {
-            res.json({ hasPermission: false });
+            res.json({ tokenCorrect: true, user: user, hasPermission: false });
             return;
         }
 
@@ -109,6 +115,40 @@ async function hasUserPermissionForChat(user, chatid) {
     return result.rows[0].count != 0;
 }
 
+async function fireMessageCreateEvent(chatid, messageid) {
+    if (!(chatid in socketListensTo)) {
+        return;
+    }
+
+    const resultM = await db.query("SELECT * FROM chatmessages WHERE chatid = $1 AND messageid = $2", [chatid, messageid])
+
+    for (socketId in socketListensTo[chatid]) {
+        var socket = socketListensTo[chatid][socketId]
+        try {
+            if (!socket.closed) {
+
+                if (socket.token in loginAndRegister.userTokens) {
+                    if (await hasUserPermissionForChat(loginAndRegister.userTokens[socket.token], chatid)) {
+                        socket.socket.send(JSON.stringify({ message: resultM.rows }))
+                    } else {
+                        socketListensTo[chatid] = socketListensTo[chatid].filter(value => value !== socket)
+                        socket.socket.send(JSON.stringify({ message: '401 - Not authorized anymore for chat ' + chatid + '. Removed you from listeners.' }))
+                    }
+                } else {
+                    socket.socket.send(JSON.stringify({ message: "401 - Incorrect token" }))
+                    socketListensTo[chatid] = socketListensTo[chatid].filter(value => value !== socket)
+                    socket.socket.close();
+                }
+            } else {
+                socketListensTo[chatid] = socketListensTo[chatid].filter(value => value !== socket)
+            }
+        } catch (exception) {
+            socketListensTo[chatid] = socketListensTo[chatid].filter(value => value !== socket)
+            console.log(exception)
+        }
+    }
+}
+
 async function generateMessageIdForChat(chatid) {
     var messageid = utils.generateRandomString()
     var result = await db.query("SELECT COUNT(*) FROM chatmessages WHERE chatid = $1 AND messageid = $2", [chatid, messageid]);
@@ -119,6 +159,23 @@ async function generateMessageIdForChat(chatid) {
     }
 }
 
+async function doesChatExist(id) {
+    var result = await db.query("SELECT COUNT(*) FROM chats WHERE chatid = $1", [id])
+    return result.rows[0].count > 0;
+}
+
+var socketListensTo = {};
+
+function addChatListener(instance, chatid) {
+    if (!(chatid in socketListensTo)) {
+        socketListensTo[chatid] = [];
+    }
+    socketListensTo[chatid].push(instance);
+}
+
 module.exports = {
     initChats,
+    doesChatExist,
+    hasUserPermissionForChat,
+    addChatListener,
 };

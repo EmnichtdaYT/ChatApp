@@ -71,7 +71,7 @@ function initLoginAndRegister(app, database, functions) {
     }
 
     if (!users || users.length < 1) {
-      res.json({ tokenCorrect: true, message: "User list is empty." })
+      res.json({ tokenCorrect: true, user: user, message: "User list is empty." })
       return;
     }
 
@@ -143,6 +143,11 @@ function generateToken(username) {
   if (token in userTokens) {
     generateToken(username);
     return;
+  }
+  for(userToken in userTokens){
+    if(userTokens[userToken] == username){
+      delete userTokens[userToken];
+    }
   }
   userTokens[token] = username;
   return token;
