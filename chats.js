@@ -80,7 +80,7 @@ function initChats(app, database, functions, loginRegister) {
 
         setTimeout(function () { //This is here because I found some sort of bug that the rows are empty at the 2nd message and this fixed it. I know this isn't optimal but I have not yet found another way to fix this
             fireMessageCreateEvent(chatid, messageid)
-        }, 5)
+        }, 100)
 
         res.json(responseJson);
     })
