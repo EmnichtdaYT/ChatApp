@@ -13,7 +13,7 @@ function initLoginAndRegister(app, database, functions) {
       res.json({
         token: result,
       });
-      var host = req.get('origin');
+      var host = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
       if(result==null){
         console.log("Failed login request for user " + user + " from " + host)
       }else{
@@ -33,7 +33,7 @@ function initLoginAndRegister(app, database, functions) {
         registered: result[0],
         status: result[1]
       });
-      var host = req.get('origin');
+      var host = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
       if(result[0]){
         console.log("User " + user + " registered successful from ip " + host)
       }else{
