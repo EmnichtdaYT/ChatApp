@@ -58,7 +58,7 @@ function startServer() {
       },
       app
     )
-    .listen(3000, function () {
+    app.listen(3000, function () {
       let host = server.address().address;
       let port = server.address().port;
       // Starting the Server at the port 3000

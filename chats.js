@@ -74,13 +74,13 @@ function initChats(app, database, functions, loginRegister) {
 
         var messageid = await generateMessageIdForChat(chatid);
 
-        db.query("INSERT INTO chatmessages (chatid, messageid, sentby, message) VALUES ($1, $2, $3, $4)", [chatid, messageid, loginAndRegister.userTokens[token], message])
+        await db.query("INSERT INTO chatmessages (chatid, messageid, sentby, message) VALUES ($1, $2, $3, $4)", [chatid, messageid, loginAndRegister.userTokens[token], message])
 
         responseJson = { tokenCorrect: true, user: user, hasPermission: true, messageid: messageid };
 
-        setTimeout(function () { //This is here because I found some sort of bug that the rows are empty at the 2nd message and this fixed it. I know this isn't optimal but I have not yet found another way to fix this
-            fireMessageCreateEvent(chatid, messageid)
-        }, 100)
+        
+        fireMessageCreateEvent(chatid, messageid)
+         
 
         res.json(responseJson);
     })
