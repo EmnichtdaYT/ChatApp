@@ -109,13 +109,13 @@ function initLoginAndRegister(app, database, functions) {
 
     var chatid = await generateChatid();
 
-    db.query("INSERT INTO chats (chatid) VALUES ($1)", [chatid]);
+    await db.query("INSERT INTO chats (chatid) VALUES ($1)", [chatid]);
 
     for (userToAdd in usersToAdd) {
       db.query("INSERT INTO chatpermissions (chatid, haspermission) VALUES ($1, $2)", [chatid, usersToAdd[userToAdd]])
     }
 
-    db.query("INSERT INTO chatpermissions (chatid, haspermission) VALUES ($1, $2)", [chatid, user])
+    await db.query("INSERT INTO chatpermissions (chatid, haspermission) VALUES ($1, $2)", [chatid, user])
 
     res.json({ tokenCorrect: true, user: user, chatid: chatid, users: usersToAdd, message: message })
   })
