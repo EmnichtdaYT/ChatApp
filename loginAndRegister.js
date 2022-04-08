@@ -13,7 +13,15 @@ function initLoginAndRegister(app, database, functions) {
       res.json({
         token: result,
       });
+      var host = req.get('origin');
+      if(result==null){
+        console.log("Failed login request for user " + user + " from " + host)
+      }else{
+        console.log("Successful login request for user " + user + " from " + host)
+      }
     })
+    
+    
   });
 
   app.post("/register", (req, res, next) => {
@@ -25,6 +33,12 @@ function initLoginAndRegister(app, database, functions) {
         registered: result[0],
         status: result[1]
       });
+      var host = req.get('origin');
+      if(result[0]){
+        console.log("User " + user + " registered successful from ip " + host)
+      }else{
+        console.log("Failed register request from " + host)
+      }
     });
   });
 
