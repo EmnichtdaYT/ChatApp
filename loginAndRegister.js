@@ -128,7 +128,7 @@ async function register(username, password) {
     return [false, "username or password too short"];
   }
 
-  if(username.includes("<") || username.includes(">")){
+  if(username.includes("<") || username.includes(">") || username.includes("\"") || username.includes("\\") || username.includes("'")){
     return [false, "Username contains illegal characters!"]
   }
 
