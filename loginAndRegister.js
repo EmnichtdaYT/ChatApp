@@ -111,11 +111,14 @@ function initLoginAndRegister(app, database, functions) {
 
     await db.query("INSERT INTO chats (chatid) VALUES ($1)", [chatid]);
 
-    usersToAdd.push(user)
+    
 
     for (userToAdd in usersToAdd) {
       db.query("INSERT INTO chatpermissions (chatid, haspermission) VALUES ($1, $2)", [chatid, usersToAdd[userToAdd]])
     }
+
+    await db.query("INSERT INTO chatpermissions (chatid, haspermission) VALUES ($1, $2)", [chatid, user])
+    usersToAdd.push(user)
 
     res.json({ tokenCorrect: true, user: user, chatid: chatid, users: usersToAdd, message: message })
   })
