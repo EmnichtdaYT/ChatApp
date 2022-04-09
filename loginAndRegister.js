@@ -128,6 +128,10 @@ async function register(username, password) {
     return [false, "username or password too short"];
   }
 
+  if(username.includes("<") || username.includes(">")){
+    return [false, "Username contains illegal characters!"]
+  }
+
   var result = await db.query("SELECT COUNT(*) FROM users WHERE name = $1", [username])
 
   if (result.rows[0].count > 0) {
